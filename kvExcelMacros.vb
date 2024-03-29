@@ -2,6 +2,8 @@ Option Explicit
 
 Sub doSeperateBom()
 
+' inserts a sperater row between BOMs on BOM import.  or any tabular data with groupings for that matter.  user picks the col to base the sepration on
+    
 Dim column As Integer
 column = InputBox("which col?", "which col")
 separateBOMs (column)
@@ -90,7 +92,8 @@ Sub ConsolidateTabs()
     Dim fieldNames() As String
     Dim foundSheet As Boolean
     foundSheet = False
-    
+
+    ' unsophistacated merge of worksheets into a single merged worksheet.  just looks for field name (user provided) in A1 and merged if found, skips the sheet if not.
     ' Set the main worksheet where all data will be consolidated
     
   On Error Resume Next
@@ -339,7 +342,9 @@ Sub DumbMerge()
     Dim destRow As Long
     Dim lastColumn As Long
     Dim copyRange As Range
-    
+
+    'very unsophisicated merge of sheets - merges all sheets, regardless of fields names or order, into a merged sheet
+
     ' Create a new worksheet to consolidate all data
     Set wsMain = ActiveWorkbook.Sheets.Add(After:=ActiveWorkbook.Sheets(ActiveWorkbook.Sheets.Count))
     wsMain.Name = "ConsolidatedData"
@@ -368,6 +373,8 @@ Sub DumbMerge()
 End Sub
 
 Sub mergeByIndex()
+
+' merges columns selected by user to a new merged sheet. user can enter csv or ranges. e.g. 1,2,3-5,6
 
     Dim ws As Worksheet
     Dim wsMain As Worksheet
