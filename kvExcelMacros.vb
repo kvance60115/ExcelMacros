@@ -61,7 +61,7 @@ Sub separateBOMs(changeCol As Long)
                             Else
                             
                              Dim cell2 As Range
-                            ' color the cells in the inserted row red.  But do not color the entire row. only those that correspond to the used range colomn number, which will be the last used header row (happens to be X in this particular data, but could change
+                            ' color the cells in the inserted row yellow if not based on col1.  But do not color the entire row. only those that correspond to the used range colomn number, which will be the last used header row (happens to be X in this particular data, but could change
                             For Each cell2 In Range(Cells(nextRow, 1), Cells(nextRow, headerCol))
                             cell2.Interior.Color = RGB(255, 255, 153) ' Yeller color
                             Next cell2
@@ -540,14 +540,3 @@ ActiveCell.Offset(1, 0).Select
 
 End Sub
 
-Sub testsplit()
-
-Dim s As String
-s = "1/3/5"
-Dim r() As String
-r = Split("s", "/")
-If (UBound(r) > 0) Then
-    Debug.Print UBound(r)
-End If
-
-End Sub
