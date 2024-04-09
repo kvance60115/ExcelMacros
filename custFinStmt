@@ -1,0 +1,276 @@
+Option Explicit
+Public currentPeriod As Long
+Public currentYear As Long
+Public currPerCol As Long
+Dim prevPerCol As Long
+Public sourceSheet As Worksheet
+Public destSheet As Worksheet
+
+Sub initializeFinStmt()
+    currentPeriod = 12 'for testing - will collect from user in real life
+    currentYear = 2024 ' testing
+    
+    Set destSheet = ThisWorkbook.Sheets(1)
+    Set sourceSheet = ThisWorkbook.Sheets(2)
+    
+    currPerCol = getPerCol(currentPeriod, currentYear, sourceSheet)
+    prevPerCol = getPerCol(currentPeriod, currentYear - 1, sourceSheet)
+    
+    'globals are set up.  now iterate down COL as of destsheet. for eash range pair found, iterate down the sourcesheet
+    'copy correspinding row data to destsheet corresponding section
+    
+
+Dim lastRow As Long
+lastRow = destSheet.Cells(destSheet.Rows.Count, 1).End(xlUp).Row 'this is row num of the last rangepair in a
+
+
+Dim i As Long
+' For i = 1 To lastRow  ' can't use for loop here - changes to lastrow not visible within loop
+i = 1
+Do While i <= lastRow
+            Dim rangeVals() As String
+            rangeVals = Split(destSheet.Cells(i, 1), ":")
+            If UBound(rangeVals) = 1 Then
+            
+            Dim rgeStart As Long
+            Dim rgeEnd As Long
+                
+                rgeStart = CLng(rangeVals(0))
+                rgeEnd = CLng(rangeVals(1))
+               
+                Dim sourceArray() As Variant
+                sourceArray = getSourceArray(rgeStart, rgeEnd)
+                
+                
+               
+                
+                    If UBound(sourceArray) > 0 And sourceArray(1, 1) <> "end of data" Then    ' need to take into account the possibity that we do not find any matching accts
+                
+                        PrintArray (sourceArray)
+                        'insert source array after moving the rest down n rows
+                        Dim numrows As Long
+                        numrows = UBound(sourceArray, 1)
+                        lastRow = lastRow + numrows
+                        Dim r As Range
+                        Set r = destSheet.Cells(i + 1, 1)
+                        'Set r = r.Resize(UBound(sourceArray, 1) + 1, UBound(sourceArray, 2) + 1) ' Adding 1 to include the last element in each dimension
+                        Set r = r.Resize(UBound(sourceArray, 1), UBound(sourceArray, 2)) ' Adding 1 seems to double up the output though
+                       ' Set r = r.Resize(1, UBound(sourceArray, 2))
+                        Dim newrow As Long
+                        For newrow = 0 To numrows - 1
+                            destSheet.Rows(i + 1).Insert Shift:=xlDown
+                            destSheet.Cells(i + 1, 1).Interior.Color = RGB(255, 244, 0)
+                        Next newrow
+                        Set r = r.Offset(-(numrows), 0)
+                        r.Value = sourceArray
+                  
+                    End If
+                    
+               
+
+                
+                
+                
+               
+            End If
+            
+i = i + 1
+ Loop
+' Next i
+
+    
+End Sub
+
+
+
+Sub insertArray(i As Long, ByRef sourceArray() As Variant)
+
+
+    Dim numrows As Long
+    Dim numCols As Long
+    Dim destSheet As Worksheet
+    Dim destRange As Range
+    Dim rowIdx As Long
+    Dim colIdx As Long
+    
+    ' Determine the dimensions of the source array
+    numrows = UBound(sourceArray, 1) - LBound(sourceArray, 1) + 1
+    numCols = UBound(sourceArray, 2) - LBound(sourceArray, 2) + 1
+    
+    ' Set destination sheet and range
+    Set destSheet = ThisWorkbook.Sheets(1)
+    
+    Set destRange = destSheet.Rows(i + 1).Resize(numrows, numCols)
+    destSheet.Rows(i & ":" & i + numrows - 1).Insert Shift:=xlDown
+    
+    
+    ' Loop through each row of the source array
+    For rowIdx = LBound(sourceArray, 1) To UBound(sourceArray, 1)
+
+
+            
+            ' Assign the value from the source array to the destination range
+          
+        
+    Next rowIdx
+    ' make this a function and return new last row?
+    
+End Sub
+
+
+Function getSourceArray(s As Long, e As Long) As Variant
+Dim collAcctData As New Collection
+
+'now we iterate down col 1 of sourcesheet, check each cell to see if it is between s and e
+Dim retarray() As Variant
+
+
+'ReDim retarray(1 To 1)
+Dim lastRow As Long
+lastRow = sourceSheet.Cells(sourceSheet.Rows.Count, 1).End(xlUp).Row
+Dim acctPattern As Object
+Set acctPattern = CreateObject("vbscript.regexp")
+Dim acctmask As String
+acctmask = Len(CStr(s)) ' need this for regex
+acctPattern.Pattern = "([0-9]{" & acctmask & "})(.*)" ' group 1 is n digit code.  group 2 is textual description
+
+Dim i As Long
+For i = 1 To lastRow
+    
+    Dim currAcct As Long
+    Dim retName As String
+    Dim retPer As Long
+    Dim retPrevPeriod As Long
+    Dim rowArray As Variant
+    ReDim rowArray(1 To 3)
+    
+        'if this row is in range, add to array
+    
+        Dim cellval As String
+        cellval = sourceSheet.Cells(i, 1)
+        Dim matches As Object
+        Set matches = acctPattern.Execute(cellval)
+        ' If UBound(matches) = 1 Then   ' nope turnsout matches is not an array
+        If matches.Count = 1 Then     'we have a range pair - do the thing
+        
+                    ' return acct name, current perid and previous period.  todo - ytd value
+                ' retarray(UBound(retarray)) = matches(0).SubMatches(1)
+                    currAcct = CLng(matches(0).SubMatches(0))
+                If currAcct >= s And currAcct <= e Then
+                    retName = matches(0).SubMatches(1)
+                        rowArray(1) = retName
+                    retPer = sourceSheet.Cells(i, currPerCol)
+                        rowArray(2) = CLng(retPer)
+                    retPrevPeriod = sourceSheet.Cells(i, prevPerCol)
+                        rowArray(3) = retPrevPeriod
+                    
+                    collAcctData.Add (rowArray)
+                End If
+        End If
+    
+        'retarray(UBound(retarray), 0) = retName
+        'retarray(UBound(retarray)) = retName
+    
+        
+    
+Next i
+If collAcctData.Count > 0 Then
+    ReDim retarray(1 To collAcctData.Count, 1 To 20)
+    
+    Dim j As Long
+    For j = 1 To collAcctData.Count
+        retarray(j, 2) = collAcctData(j)(1)
+        retarray(j, 5) = collAcctData(j)(2)
+        retarray(j, 9) = collAcctData(j)(3)
+    Next
+Else
+    ReDim retarray(1 To 1, 1 To 3)
+    retarray(1, 1) = "end of data"
+End If
+
+
+
+getSourceArray = retarray
+End Function
+
+
+Function getPerCol(per As Long, yr As Long, ss As Worksheet) As Long
+
+Dim perPattern As Object
+Set perPattern = CreateObject("VBScript.RegExp")
+perPattern.Pattern = "(202[0-9]) Period ([0-9]{1,2})"
+Dim retCol As Long
+retCol = 0 'if not found will return 0
+
+Dim cellyr As String
+Dim cellPer As String
+Dim matches As Object
+
+
+Dim cell As Range
+For Each cell In sourceSheet.Rows(1).Cells
+    If perPattern.Test(cell.Value) Then ' just check to see if the period pattern matches
+        
+        Set matches = perPattern.Execute(cell.Value)
+        cellyr = matches(0).SubMatches(0)
+        cellPer = matches(0).SubMatches(1)
+    
+    
+        If cellyr = yr And cellPer = per Then
+            retCol = cell.Column
+            Exit For
+        End If
+    End If
+
+Next cell
+
+getPerCol = retCol
+
+End Function
+
+Sub testing()
+
+
+Dim arr()
+ReDim arr(1 To 2, 1 To 3)
+Debug.Print UBound(arr, 1)
+arr(1, 1) = "a1"
+arr(1, 2) = "a2"
+
+arr(1, 3) = "Test3"
+arr(2, 1) = "b1"
+arr(2, 2) = "b2"
+arr(2, 3) = "b3"
+
+ReDim Preserve arr(1 To 3, 1 To 3)
+
+arr(2, 4) = "c1"
+
+
+
+
+End Sub
+
+Sub PrintArray(a As Variant)
+    Dim i As Long
+    Dim j As Long
+    
+    ' Determine the bounds of the array
+    Dim lowerBound As Long
+    Dim upperBound As Long
+    lowerBound = LBound(a, 1)
+    upperBound = UBound(a, 1)
+    
+    Debug.Print "=========START========="
+               
+    ' Loop through the array and print each element
+    For i = lowerBound To upperBound
+        For j = LBound(a, 2) To UBound(a, 2)
+            Debug.Print a(i, j);
+        Next j
+        Debug.Print ' Print a new line after each row
+    Next i
+     Debug.Print "=========END========="
+End Sub
+
+
