@@ -3,18 +3,43 @@ Public currentPeriod As Long
 Public currentYear As Long
 Public currPerCol As Long
 Dim prevPerCol As Long
+Dim firstPerCol As Long
+Dim prevFirstPerCol As Long
 Public sourceSheet As Worksheet
 Public destSheet As Worksheet
 
 Sub initializeFinStmt()
+
     currentPeriod = 12 'for testing - will collect from user in real life
     currentYear = 2024 ' testing
     
+    Dim txtCurrentPeriod As String
+    txtCurrentPeriod = InputBox("current period?", "enter a period - between 1 and 12")
+    currentPeriod = CLng(txtCurrentPeriod)
+    
+    Dim txtCurrentYear As String
+    txtCurrentYear = InputBox("current year?", "enter a year as YYYY")
+    currentYear = CLng(txtCurrentYear)
+        
     Set destSheet = ThisWorkbook.Sheets(1)
-    Set sourceSheet = ThisWorkbook.Sheets(2)
+    'lets get the data into this sheet
+    
+    AddDataSheetIfNeeded
+     Set sourceSheet = ThisWorkbook.Sheets("DATA")
+    'add the source data to the DATA tab
+    
+    getSourceData
+    
     
     currPerCol = getPerCol(currentPeriod, currentYear, sourceSheet)
     prevPerCol = getPerCol(currentPeriod, currentYear - 1, sourceSheet)
+    firstPerCol = getPerCol(1, currentYear, sourceSheet)
+    prevFirstPerCol = getPerCol(1, currentYear - 1, sourceSheet)  'need error handling in case not found
+    If prevFirstPerCol < 1 Then
+        MsgBox ("previous period not defined. default to 2 for testing")
+        prevFirstPerCol = 2
+    End If
+    
     
     'globals are set up.  now iterate down COL as of destsheet. for eash range pair found, iterate down the sourcesheet
     'copy correspinding row data to destsheet corresponding section
@@ -29,11 +54,18 @@ Dim i As Long
 i = 1
 Do While i <= lastRow
             Dim rangeVals() As String
-            rangeVals = Split(destSheet.Cells(i, 1), ":")
+            rangeVals = Split(destSheet.Cells(i, 1), ":")   ' if we found a range pair seperated by colon
             If UBound(rangeVals) = 1 Then
             
             Dim rgeStart As Long
             Dim rgeEnd As Long
+            Dim invertVal As Boolean
+            invertVal = False
+            If destSheet.Cells(i, 5).Value = "\-" Then   ' indicates if value needs to be inverted.
+                invertVal = True
+               ' Debug.Print destSheet.Cells(i, 5).Value
+               ' Debug.Assert invertVal <> True
+            End If
                 
                 rgeStart = CLng(rangeVals(0))
                 rgeEnd = CLng(rangeVals(1))
@@ -41,11 +73,23 @@ Do While i <= lastRow
                 Dim sourceArray() As Variant
                 sourceArray = getSourceArray(rgeStart, rgeEnd)
                 
-                
-               
-                
+ 
+                  
+                               
                     If UBound(sourceArray) > 0 And sourceArray(1, 1) <> "end of data" Then    ' need to take into account the possibity that we do not find any matching accts
-                
+                    If invertVal = True Then
+                        Dim j As Long
+                        Dim k As Long
+                        For j = LBound(sourceArray) To UBound(sourceArray)
+                          '  For k = 1 To UBound(sourceArray, 2) - 1
+                                sourceArray(j, 5) = -sourceArray(j, 5)
+                                sourceArray(j, 9) = -sourceArray(j, 9)
+                                sourceArray(j, 13) = -sourceArray(j, 13)
+                                sourceArray(j, 17) = -sourceArray(j, 17)
+                                'sourceArray(j, 17) = -sourceArray(j, 17)
+                         '   Next k
+                        Next j
+                    End If
                         PrintArray (sourceArray)
                         'insert source array after moving the rest down n rows
                         Dim numrows As Long
@@ -62,6 +106,8 @@ Do While i <= lastRow
                             destSheet.Cells(i + 1, 1).Interior.Color = RGB(255, 244, 0)
                         Next newrow
                         Set r = r.Offset(-(numrows), 0)
+                        ' if acct type  is to be inverted
+ 
                         r.Value = sourceArray
                   
                     End If
@@ -78,7 +124,7 @@ i = i + 1
  Loop
 ' Next i
 
-    
+  destSheet.Columns("a").Hidden = True
 End Sub
 
 
@@ -141,8 +187,10 @@ For i = 1 To lastRow
     Dim retName As String
     Dim retPer As Long
     Dim retPrevPeriod As Long
+    Dim retYTD As Double
+    Dim retPrevYTD As Double
     Dim rowArray As Variant
-    ReDim rowArray(1 To 3)
+    ReDim rowArray(1 To 5) ' name, curr, prev, ytd, and prevytd
     
         'if this row is in range, add to array
     
@@ -150,8 +198,8 @@ For i = 1 To lastRow
         cellval = sourceSheet.Cells(i, 1)
         Dim matches As Object
         Set matches = acctPattern.Execute(cellval)
-        ' If UBound(matches) = 1 Then   ' nope turnsout matches is not an array
-        If matches.Count = 1 Then     'we have a range pair - do the thing
+        ' If UBound(matches) = 1 Then   ' nope turnsout "matches" is not an array
+        If matches.Count = 1 Then     ' should prob make this another function, but...
         
                     ' return acct name, current perid and previous period.  todo - ytd value
                 ' retarray(UBound(retarray)) = matches(0).SubMatches(1)
@@ -163,6 +211,12 @@ For i = 1 To lastRow
                         rowArray(2) = CLng(retPer)
                     retPrevPeriod = sourceSheet.Cells(i, prevPerCol)
                         rowArray(3) = retPrevPeriod
+                    'retYTD = 999 ' "todo"
+                    retYTD = Application.WorksheetFunction.Sum(sourceSheet.Range(sourceSheet.Cells(i, firstPerCol), sourceSheet.Cells(i, currPerCol)))
+                        rowArray(4) = retYTD
+                    'retPrevYTD = 999 ' "todo"
+                    retPrevYTD = Application.WorksheetFunction.Sum(sourceSheet.Range(sourceSheet.Cells(i, prevFirstPerCol), sourceSheet.Cells(i, firstPerCol - 1))) 'last col of prev s/b 1 befure 1st of current period
+                        rowArray(5) = retPrevYTD
                     
                     collAcctData.Add (rowArray)
                 End If
@@ -182,9 +236,11 @@ If collAcctData.Count > 0 Then
         retarray(j, 2) = collAcctData(j)(1)
         retarray(j, 5) = collAcctData(j)(2)
         retarray(j, 9) = collAcctData(j)(3)
+        retarray(j, 13) = collAcctData(j)(4)
+        retarray(j, 17) = collAcctData(j)(5)
     Next
 Else
-    ReDim retarray(1 To 1, 1 To 3)
+    ReDim retarray(1 To 1, 1 To 20)
     retarray(1, 1) = "end of data"
 End If
 
@@ -273,4 +329,82 @@ Sub PrintArray(a As Variant)
      Debug.Print "=========END========="
 End Sub
 
+Sub testgetper()
+ Debug.Print getPerCol(1, 2024, sourceSheet)
 
+
+End Sub
+
+Sub AddDataSheetIfNeeded()
+    Dim ws As Worksheet
+    Dim dataSheetExists As Boolean
+    
+    ' Initialize dataSheetExists flag to False
+    dataSheetExists = False
+    
+    ' Loop through each sheet in ThisWorkbook
+    For Each ws In ThisWorkbook.Sheets
+        ' Check if the sheet named "DATA" exists
+        If ws.Name = "DATA" Then
+            ' Set the flag to True if "DATA" sheet is found
+            dataSheetExists = True
+            Exit For ' No need to continue the loop once found
+        End If
+    Next ws
+    
+    ' If "DATA" sheet does not exist, add it
+    If Not dataSheetExists Then
+        ThisWorkbook.Sheets.Add(After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count)).Name = "DATA"
+        ' Optionally, you can add code here to format or populate the "DATA" sheet as needed
+    End If
+End Sub
+
+
+Sub getSourceData()
+
+    Dim wbData As Workbook
+    Dim wsData As Worksheet
+    Dim filepath As Variant
+    Dim sheetName As String
+    
+    
+   filepath = Application.GetOpenFilename("Excel Files (*.xls; *.xlsx), *.xls; *.xlsx", , "Select Source Workbook")  ' rets bool false if cancel
+   If filepath <> False Then
+   Set wbData = Workbooks.Open(filepath, ReadOnly:=True)
+   Debug.Assert False
+   
+        Dim rgSource As Range
+         If wbData.Sheets.Count > 1 Then
+            'let user pick the sheet
+            Dim myarr() As Variant
+            Dim i As Long
+            i = 1
+            For Each wsData In wbData.Sheets
+                ReDim Preserve myarr(1 To i)
+                myarr(i) = wsData.Name
+                i = i + 1
+            Next
+            
+            frmSelectSheet.cboSelectTab.List = myarr
+            frmSelectSheet.Show
+            Dim selectedSheetName As Variant
+            selectedSheetName = frmSelectSheet.cboSelectTab.Value
+            
+            Set wsData = wbData.Worksheets(selectedSheetName)
+            Set rgSource = wsData.Range("A1").CurrentRegion
+            
+            
+            
+    Else
+        
+       Set rgSource = wbData.Worksheets(1).Range("A1").CurrentRegion
+        
+    End If
+   
+   rgSource.Copy
+   ThisWorkbook.Worksheets("DATA").Range("A1").PasteSpecial xlPasteValues
+   
+   
+   End If
+wbData.Close
+End Sub
