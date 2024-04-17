@@ -1,0 +1,76 @@
+Option Explicit
+
+Function testUSPSscrape() As String
+    Dim r As Object
+    Set r = CreateObject("WinHttp.WinHttpRequest.5.1")
+    Dim strAddress1 As String
+    Dim strCity As String
+    Dim strState As String
+    Dim addr1Col As Long
+    Dim cityCol As Long
+    Dim stateCol As Long
+    addr1Col = ActiveCell.Column - 3
+    cityCol = ActiveCell.Column - 2
+    stateCol = ActiveCell.Column - 1
+    strAddress1 = Cells(ActiveCell.Row, addr1Col)
+    strCity = Cells(ActiveCell.Row, cityCol)
+    strState = Cells(ActiveCell.Row, stateCol)
+    
+    Dim u As String
+    u = "https://tools.usps.com/tools/app/ziplookup/zipByAddress"
+    
+    Dim post As String
+    post = "companyName=" & strAddress1 & "&city=" & strCity & "&state=" & strState
+    
+    '=528+s.+third&address2=&city=dekalb&state=IL&urbanCode=&zip="
+    
+    r.Open "POST", u, False
+    r.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+    r.send post
+    
+    Debug.Print r.responseText
+    Dim myZip As String
+    Dim startPos As Long
+    Dim myResult As String
+    myResult = r.responseText
+   ' startPos = InStr(myResult, "{result")
+    Dim scriptDict As Object
+   Set scriptDict = CreateObject("Scripting.Dictionary")
+   Dim jsonResponse As Object
+    'Set jsonResponse = JsonConverter.ParseJson(myResult)
+    Dim SplitResult() As String
+    SplitResult = Split(myResult, ",")
+    'find element with zip5
+    'Dim myZip As String
+    myZip = extractZip(SplitResult)
+    ActiveCell.Value = myZip
+    
+End Function
+
+Function extractZip(a As Variant) As String
+    Dim i As Long
+    Dim searchString As String
+    
+    ' Loop through each element in the array
+    For i = LBound(a) To UBound(a)
+        ' Check if the element contains "zip5"
+        searchString = """zip5"""
+        If InStr(1, a(i), searchString) > 0 Then
+            ' Extract the ZIP code from the element
+            Dim startPos As Long
+            Dim endPos As Long
+            startPos = InStr(a(i), searchString) + Len(searchString) + 2 ' +2 to skip ":" and "
+            endPos = InStr(startPos, a(i), """", vbBinaryCompare)
+            If endPos > startPos Then
+                extractZip = Mid(a(i), startPos, endPos - startPos)
+                Exit Function ' Return the first occurrence found
+            End If
+        End If
+    Next i
+    
+    ' If no matching element is found, return an empty string
+    extractZip = ""
+End Function
+
+
+
