@@ -1,6 +1,31 @@
+
 Option Explicit
 
-Function testUSPSscrape() As String
+Sub getAllZips()
+
+Dim numAddyRows As Long
+numAddyRows = Range("a1").End(xlDown).Row
+Dim arrZips() As String
+ReDim arrZips(0)
+Dim zipCol As Long
+zipCol = CLng(InputBox("what column holds the zip?", "zipcol"))
+
+Dim i As Long
+For i = 0 To numAddyRows - 1
+    
+    arrZips(UBound(arrZips)) = USPSscrape(i + 1, zipCol)
+
+    ReDim Preserve arrZips(UBound(arrZips) + 1)
+Next i
+
+Dim t As Range
+Set t = ActiveSheet.Range("d1").Resize(UBound(arrZips))
+t.Value = WorksheetFunction.Transpose(arrZips)
+
+End Sub
+
+
+Function USPSscrape(myrow As Long, mycol As Long) As String
     Dim r As Object
     Set r = CreateObject("WinHttp.WinHttpRequest.5.1")
     Dim strAddress1 As String
@@ -9,12 +34,12 @@ Function testUSPSscrape() As String
     Dim addr1Col As Long
     Dim cityCol As Long
     Dim stateCol As Long
-    addr1Col = ActiveCell.Column - 3
-    cityCol = ActiveCell.Column - 2
-    stateCol = ActiveCell.Column - 1
-    strAddress1 = Cells(ActiveCell.Row, addr1Col)
-    strCity = Cells(ActiveCell.Row, cityCol)
-    strState = Cells(ActiveCell.Row, stateCol)
+    addr1Col = mycol - 3
+    cityCol = mycol - 2
+    stateCol = mycol - 1
+    strAddress1 = Cells(myrow, addr1Col)
+    strCity = Cells(myrow, cityCol)
+    strState = Cells(myrow, stateCol)
     
     Dim u As String
     u = "https://tools.usps.com/tools/app/ziplookup/zipByAddress"
@@ -43,8 +68,8 @@ Function testUSPSscrape() As String
     'find element with zip5
     'Dim myZip As String
     myZip = extractZip(SplitResult)
-    ActiveCell.Value = myZip
-    
+    'ActiveCell.Value = myZip
+    USPSscrape = myZip
 End Function
 
 Function extractZip(a As Variant) As String
@@ -71,6 +96,7 @@ Function extractZip(a As Variant) As String
     ' If no matching element is found, return an empty string
     extractZip = ""
 End Function
+
 
 
 
