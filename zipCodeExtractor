@@ -4,11 +4,11 @@ Option Explicit
 Sub getAllZips()
 
 Dim numAddyRows As Long
-numAddyRows = Range("a1").End(xlDown).Row
+numAddyRows = Range("a" & Rows.Count).End(xlUp).Row
 Dim arrZips() As String
 ReDim arrZips(0)
 Dim zipCol As Long
-zipCol = CLng(InputBox("what column holds the zip?", "zipcol"))
+zipCol = CLng(InputBox("what column holds the zip? [A is 1]", "zipcol"))
 
 Dim i As Long
 For i = 0 To numAddyRows - 1
@@ -19,7 +19,7 @@ For i = 0 To numAddyRows - 1
 Next i
 
 Dim t As Range
-Set t = ActiveSheet.Range("d1").Resize(UBound(arrZips))
+Set t = ActiveSheet.Cells(1, zipCol).Resize(UBound(arrZips))
 t.Value = WorksheetFunction.Transpose(arrZips)
 
 End Sub
@@ -74,22 +74,37 @@ End Function
 
 Function extractZip(a As Variant) As String
     Dim i As Long
-    Dim searchString As String
+    Dim zip5StartPos As Long
+    Dim zip5EndPos As Long
+    Dim zip4StartPos As Long
+    Dim zip4EndPos As Long
+    Dim zip5 As String
+    Dim zip4 As String
     
     ' Loop through each element in the array
     For i = LBound(a) To UBound(a)
         ' Check if the element contains "zip5"
-        searchString = """zip5"""
-        If InStr(1, a(i), searchString) > 0 Then
+        If InStr(1, a(i), """zip5""") > 0 Then
             ' Extract the ZIP code from the element
-            Dim startPos As Long
-            Dim endPos As Long
-            startPos = InStr(a(i), searchString) + Len(searchString) + 2 ' +2 to skip ":" and "
-            endPos = InStr(startPos, a(i), """", vbBinaryCompare)
-            If endPos > startPos Then
-                extractZip = Mid(a(i), startPos, endPos - startPos)
-                Exit Function ' Return the first occurrence found
+            zip5StartPos = InStr(a(i), """zip5""") + Len("""zip5"":""") ' Position of the start of zip5 value
+            zip5EndPos = InStr(zip5StartPos, a(i), """") ' Position of the end of zip5 value
+            zip5 = Mid(a(i), zip5StartPos, zip5EndPos - zip5StartPos) ' Extract zip5 value
+            
+            ' Check if the element contains "zip4"
+            If InStr(1, a(i + 1), """zip4""") > 0 Then
+                ' Extract the zip4 value
+                zip4StartPos = InStr(a(i + 1), """zip4""") + Len("""zip4"":""") ' Position of the start of zip4 value
+                zip4EndPos = InStr(zip4StartPos, a(i + 1), """") ' Position of the end of zip4 value
+                zip4 = Mid(a(i + 1), zip4StartPos, zip4EndPos - zip4StartPos) ' Extract zip4 value
+                
+                ' Append zip4 to zip5
+                extractZip = zip5 & "-" & zip4
+            Else
+                ' No zip4 found, return zip5 only
+                extractZip = zip5
             End If
+            
+            Exit Function ' Return the zip code
         End If
     Next i
     
