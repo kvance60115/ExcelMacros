@@ -1,7 +1,7 @@
 Option Explicit
 
 Sub doSeperateBom()
-    'comment to cause a conflict
+    'comment to cause a conflict 2
     ' insert a comment for git commit test
     ' inserts a sperater row between BOMs on BOM import.  or any tabular data with groupings for that matter.  user picks the col to base the sepration on
 
