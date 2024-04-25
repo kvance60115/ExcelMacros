@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 Option Explicit
 'ok this is a real ubunty conflict
@@ -117,3 +118,125 @@ End Function
 
 
 
+=======
+'windows conflist for real this time
+' a comment form ubuntu to create a conflict
+' comment from windows to create a conflict
+Option Explicit
+' adding a comment to test new branch in git
+
+Sub getAllZips()
+
+Dim numAddyRows As Long
+numAddyRows = Range("a" & Rows.Count).End(xlUp).Row
+Dim arrZips() As String
+ReDim arrZips(0)
+Dim zipCol As Long
+zipCol = CLng(InputBox("what column holds the zip? [A is 1]", "zipcol"))
+
+Dim i As Long
+For i = 0 To numAddyRows - 1
+    
+    arrZips(UBound(arrZips)) = USPSscrape(i + 1, zipCol)
+
+    ReDim Preserve arrZips(UBound(arrZips) + 1)
+Next i
+
+Dim t As Range
+Set t = ActiveSheet.Cells(1, zipCol).Resize(UBound(arrZips))
+t.Value = WorksheetFunction.Transpose(arrZips)
+
+End Sub
+
+
+Function USPSscrape(myrow As Long, mycol As Long) As String
+    Dim r As Object
+    Set r = CreateObject("WinHttp.WinHttpRequest.5.1")
+    Dim strAddress1 As String
+    Dim strCity As String
+    Dim strState As String
+    Dim addr1Col As Long
+    Dim cityCol As Long
+    Dim stateCol As Long
+    addr1Col = mycol - 3
+    cityCol = mycol - 2
+    stateCol = mycol - 1
+    strAddress1 = Cells(myrow, addr1Col)
+    strCity = Cells(myrow, cityCol)
+    strState = Cells(myrow, stateCol)
+    
+    Dim u As String
+    u = "https://tools.usps.com/tools/app/ziplookup/zipByAddress"
+    
+    Dim post As String
+    post = "companyName=" & strAddress1 & "&city=" & strCity & "&state=" & strState
+    
+    '=528+s.+third&address2=&city=dekalb&state=IL&urbanCode=&zip="
+    
+    r.Open "POST", u, False
+    r.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+    r.send post
+    
+    Debug.Print r.responseText
+    Dim myZip As String
+    Dim startPos As Long
+    Dim myResult As String
+    myResult = r.responseText
+   ' startPos = InStr(myResult, "{result")
+    Dim scriptDict As Object
+   Set scriptDict = CreateObject("Scripting.Dictionary")
+   Dim jsonResponse As Object
+    'Set jsonResponse = JsonConverter.ParseJson(myResult)
+    Dim SplitResult() As String
+    SplitResult = Split(myResult, ",")
+    'find element with zip5
+    'Dim myZip As String
+    myZip = extractZip(SplitResult)
+    'ActiveCell.Value = myZip
+    USPSscrape = myZip
+End Function
+
+Function extractZip(a As Variant) As String
+    Dim i As Long
+    Dim zip5StartPos As Long
+    Dim zip5EndPos As Long
+    Dim zip4StartPos As Long
+    Dim zip4EndPos As Long
+    Dim zip5 As String
+    Dim zip4 As String
+    
+    ' Loop through each element in the array
+    For i = LBound(a) To UBound(a)
+        ' Check if the element contains "zip5"
+        If InStr(1, a(i), """zip5""") > 0 Then
+            ' Extract the ZIP code from the element
+            zip5StartPos = InStr(a(i), """zip5""") + Len("""zip5"":""") ' Position of the start of zip5 value
+            zip5EndPos = InStr(zip5StartPos, a(i), """") ' Position of the end of zip5 value
+            zip5 = Mid(a(i), zip5StartPos, zip5EndPos - zip5StartPos) ' Extract zip5 value
+            
+            ' Check if the element contains "zip4"
+            If InStr(1, a(i + 1), """zip4""") > 0 Then
+                ' Extract the zip4 value
+                zip4StartPos = InStr(a(i + 1), """zip4""") + Len("""zip4"":""") ' Position of the start of zip4 value
+                zip4EndPos = InStr(zip4StartPos, a(i + 1), """") ' Position of the end of zip4 value
+                zip4 = Mid(a(i + 1), zip4StartPos, zip4EndPos - zip4StartPos) ' Extract zip4 value
+                
+                ' Append zip4 to zip5
+                extractZip = zip5 & "-" & zip4
+            Else
+                ' No zip4 found, return zip5 only
+                extractZip = zip5
+            End If
+            
+            Exit Function ' Return the zip code
+        End If
+    Next i
+    
+    ' If no matching element is found, return an empty string
+    extractZip = ""
+End Function
+
+
+
+
+>>>>>>> e2734e4dc40649001134f4b06977e24b869149d3
