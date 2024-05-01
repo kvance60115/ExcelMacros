@@ -1,3 +1,4 @@
+'test added this lino on github
 Option Explicit
 Public currentPeriod As Long
 Public currentYear As Long
