@@ -1,0 +1,48 @@
+
+
+Private Sub cmdAppendWorkingFile_fafsa_Click()
+
+    AppendToFAFSA
+
+End Sub
+
+Private Sub cmdAppendWorkingFile_master_Click()
+    
+    appendToMaster
+    
+End Sub
+
+Private Sub cmdCloseFrm_Click()
+    Unload Me
+    ThisWorkbook.Sheets("sheet1").Activate
+    
+End Sub
+
+Private Sub cmdCopySheet_Click()
+   
+   CopySheetToNewWorkbook
+   
+End Sub
+
+
+Private Sub cmdExit_Click()
+     ThisWorkbook.Close
+End Sub
+
+Private Sub cmdNumbers_Click()
+    Dim p As String
+    p = selectNumbers
+    
+    Debug.Print p
+    'frmAltApp.
+    txtSelectedNums.Text = p
+    
+    
+End Sub
+
+Private Sub cmdParseRaw_Click()
+
+    parseFile
+
+End Sub
+
