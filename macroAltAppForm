@@ -1,0 +1,42 @@
+Sub doAltAppForm()
+    Dim regex As Object
+    Dim matches As Object
+    Dim mpattern As String
+    Dim result As String
+    Dim ip As String
+    Dim formulaStr As String
+
+    ' Create a new RegExp object
+    Set regex = CreateObject("VBScript.RegExp")
+
+    ' Define the pattern
+    mpattern = "(\$[A-Z]{1,3})\$[0-9]+"
+    ip = ActiveCell.Value
+
+    ' Set the pattern and other properties
+    With regex
+        .Pattern = mpattern
+        .Global = False
+        .IgnoreCase = False
+    End With
+
+    ' Execute the regex on the input string
+    Set matches = regex.Execute(ip)
+    
+    ' Check if there's at least one match
+    If matches.Count > 0 Then
+       result = matches(0).SubMatches(0)
+       ' formulaStr = "=IF('Master Sheet'!" & result & "2="""","""",'Master Sheet'!" & result & "2)"
+               formulaStr = "=IF('Master Sheet '!" & result & "$2="""","""",'Master Sheet '!" & result & "$2)"
+
+        Debug.Print formulaStr
+        ' Optionally set the formula in the cell
+         ActiveCell.Offset(-1, 0).Formula = formulaStr
+    Else
+        MsgBox "No match found!"
+    End If
+
+    ' Clean up
+    Set regex = Nothing
+    Set matches = Nothing
+End Sub
