@@ -1,0 +1,28 @@
+'formulaString = "=IF('" & wsMaster.Name & "'!" & addr & "="""", """", '" & wsMaster.Name & "'!" & addr & ")"
+Sub ReplaceIndirectWithStaticRefs()
+    Dim wsFafsa As Worksheet
+    Dim wsMaster As Worksheet
+    Dim lastCol As Long
+    Dim cell As Range
+    Dim addr As String
+    Dim formulaString As String
+    
+    ' Set the relevant sheets
+    Set wsFafsa = ThisWorkbook.Sheets("FAFSA Version")
+    Set wsMaster = ThisWorkbook.Sheets("Master Sheet ")
+    
+    ' Adjust this to the range where your INDIRECT formulas are located
+    lastCol = 101 'wsFafsa.Cells(2, wsFafsa.Columns.Count).End(xlToLeft).Column
+    
+    For Each cell In wsFafsa.Range(wsFafsa.Cells(2, 1), wsFafsa.Cells(2, lastCol))
+        addr = wsFafsa.Cells(4, cell.Column).Value  ' Get the address from row 4
+        If addr <> "" Then
+            ' Use double double-quotes for the empty string condition in VBA
+    '       formulaString = "=IF('" & wsMaster.Name & "'!" & addr & "="""" ,"" ,"" '" & wsMaster.Name & "'!" & addr & ")"
+            formulaString = "=IF('" & wsMaster.Name & "'!" & addr & "="""", """", '" & wsMaster.Name & "'!" & addr & ")"
+
+            cell.Formula = formulaString
+        End If
+    Next cell
+End Sub
+
