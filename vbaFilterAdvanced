@@ -1,0 +1,52 @@
+Sub filterAndCopy()
+  
+    
+    Dim rgData As Range
+    Dim rgCriteria As Range
+    Dim copyRange As Range
+    Dim copyToStartCol As Long
+    Dim copyToEndCol As Long
+    
+    ' Set the source data range
+    Set rgData = ThisWorkbook.Worksheets("sortSheet").Range("A1").CurrentRegion
+    
+  
+        
+        
+    
+    
+    ' Set the starting column for the copy range
+    copyToStartCol = rgData.Columns.Count + 2   ' 1 empty column between source and target
+    
+    ' Calculate the ending column for the copy range
+    copyToEndCol = copyToStartCol + rgData.Columns.Count
+    
+
+        
+    
+    
+    ' Define the copy range with corrected column indices
+    Set copyRange = ThisWorkbook.Worksheets("SortSheet").Range( _
+        ThisWorkbook.Worksheets("sortSheet").Cells(1, copyToStartCol), _
+        ThisWorkbook.Worksheets("sortSheet").Cells(1, copyToEndCol))
+    
+    
+    Set rgCriteria = ThisWorkbook.Worksheets("sortSheet").Range( _
+        ThisWorkbook.Worksheets("sortSheet").Cells(1, copyToEndCol + 2), _
+        ThisWorkbook.Worksheets("sortSheet").Cells(2, copyToEndCol + 2))
+        
+    Dim lastDate As String
+    lastDate = ">=20240601"
+ 
+    rgCriteria.Cells(2, 1).Value = lastDate
+    
+    ' Check if headers are properly set and copy range is valid
+    If WorksheetFunction.CountBlank(rgData.Rows(1)) = 0 Then
+        ' Apply the AdvancedFilter
+        rgData.AdvancedFilter xlFilterCopy, rgCriteria, copyRange
+    Else
+        MsgBox "One or more headers are missing or invalid in the data range.", vbCritical
+    End If
+End Sub
+
+
