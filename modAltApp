@@ -199,6 +199,985 @@ Sub CopySheetToDestination()
     destWorkbook.Save
     destWorkbook.Close
     
+    
+    
+    ' Reactivate the original workbook
+    ThisWorkbook.Activate
+    
+    MsgBox "Sheet copied successfully to " & destFileName
+End Sub
+
+Sub showForm()
+
+    frmAltApp.Show vbModeless
+
+End Sub
+
+ Sub CopySheetToNewWorkbook()
+    Dim newWorkbook As Workbook
+    Dim sourceSheet As Worksheet
+    Dim tempSheet As Worksheet
+    Dim destFileName As String
+    Dim lastRow As Long
+    Dim lastCol As Long
+
+    ' Set the source sheet
+    Set sourceSheet = ThisWorkbook.Sheets("Sheet1")
+    
+    ' Find the last row with data in the source sheet
+    lastRow = sourceSheet.Cells(sourceSheet.Rows.Count, 1).End(xlUp).Row
+    lastCol = sourceSheet.Cells(3, sourceSheet.Columns.Count).End(xlToLeft).Column
+
+    ' Create a new workbook
+    Set newWorkbook = Workbooks.Add
+    
+    ' Create a new sheet in the new workbook and copy the source sheet data without the first row
+    Set tempSheet = newWorkbook.Sheets(1)
+    sourceSheet.Range("A2", sourceSheet.Cells(lastRow, lastCol)).Copy Destination:=tempSheet.Range("A2")
+    
+    ' Prompt the user to save the new workbook
+    destFileName = Application.GetSaveAsFilename(FileFilter:="Excel Files (*.xlsx), *.xlsx", title:="Save As")
+    
+    ' Check if the user canceled the save dialog
+    If destFileName = "False" Then
+        MsgBox "Operation canceled."
+        Exit Sub
+    End If
+    
+    ' Save the new workbook
+    newWorkbook.SaveAs Filename:=destFileName
+    
+    ' Close the new workbook
+    newWorkbook.Close
+    
+    ' Reactivate the original workbook
+    ThisWorkbook.Activate
+    
+    MsgBox "Sheet data copied successfully to new workbook: " & destFileName
+End Sub
+
+' Helper function to handle file dialogs
+Function GetFilePath(title As String, filterDesc As String, filterExt As String) As String
+    Dim fileDialog As fileDialog
+    Set fileDialog = Application.fileDialog(msoFileDialogFilePicker)
+    fileDialog.title = title
+    fileDialog.Filters.Clear
+    fileDialog.Filters.Add filterDesc, filterExt, 1
+    If fileDialog.Show = -1 Then
+        GetFilePath = fileDialog.SelectedItems(1)
+    Else
+        GetFilePath = vbNullString
+    End If
+End Function
+
+' Sub to disable the UI
+Sub DisableUI()
+    Application.Interactive = False
+    Application.ScreenUpdating = False
+End Sub
+
+' Sub to enable the UI
+Sub EnableUI()
+    Application.Interactive = True
+    Application.ScreenUpdating = True
+End Sub
+
+' Sub to update the status
+Sub UpdateStatus(statusMessage As String)
+    frmAltApp.lblStatus.Caption = statusMessage
+    DoEvents ' Allow the UserForm to update
+End Sub
+
+
+Sub AppendToFAFSA()
+    Dim sourceSheet As Worksheet
+    Dim fafsaSheet As Worksheet
+    Dim fafsaFile As String
+    Dim fafsaWorkbook As Workbook
+    Dim lastRow As Long
+    Dim lastCol As Long
+
+    ' Set the source sheet
+    Set sourceSheet = ThisWorkbook.Sheets("Sheet1")
+    lastRow = sourceSheet.Cells(sourceSheet.Rows.Count, 1).End(xlUp).Row
+    lastCol = sourceSheet.Cells(3, sourceSheet.Columns.Count).End(xlToLeft).Column
+    
+    'add all imported rows to array for processing
+    Dim RangeSource As Range
+    Set RangeSource = sourceSheet.Range(sourceSheet.Cells(3, 1), sourceSheet.Cells(lastRow, lastCol))
+    Dim arrSource() As Variant
+    arrSource = RangeSource.Value
+    ' and an array to hold new records
+    Dim arrDest() As Variant
+    ReDim arrDest(1 To UBound(arrSource, 1), 1 To 71)   ' destination can't be larger than source
+    
+    'Stop
+
+' Disable UI
+    DisableUI   'temporarily disable this while testing
+    UpdateStatus "Initializing..."    'temporarily disable this while testing
+
+    ' Select FAFSA file
+    fafsaFile = GetFilePath("Select the Full Working File", "Excel Workbook", "*.xlsx")
+    If fafsaFile = vbNullString Then
+        MsgBox "No file selected. Exiting..."
+        EnableUI
+        Exit Sub
+    End If
+
+    ' Open FAFSA file
+    Set fafsaWorkbook = Workbooks.Open(fafsaFile)
+    Set fafsaSheet = fafsaWorkbook.Sheets("FAFSA Version")
+
+    ' TODO: Implement appending logic here
+    ' need to add rows with transaction date > largest date.  prob make this a seperate function. return an array of the rows then add to bottom of selected sheet
+    'get most recent transaction in fafsaSheet
+    Dim lastTrans As Long
+    lastTrans = getLastTransDate(fafsaSheet)
+    
+    
+    
+    Dim i As Long
+    For i = 1 To UBound(arrSource)
+       If ((arrSource(1, 297) = "N") And (arrSource(i, 13) > lastTrans)) Then
+        
+            ' need to map fields fo FAFSA Format tab
+            arrDest(i, 1) = arrSource(i, 2)
+            arrDest(i, 3) = arrSource(i, 5)
+            arrDest(i, 4) = arrSource(i, 6)
+            arrDest(i, 5) = arrSource(i, 12)
+            arrDest(i, 6) = arrSource(i, 279)
+            arrDest(i, 7) = arrSource(i, 31)
+            arrDest(i, 8) = arrSource(i, 4)
+            arrDest(i, 9) = arrSource(i, 96)
+            arrDest(i, 10) = arrSource(i, 27)
+            arrDest(i, 11) = arrSource(i, 25)
+            arrDest(i, 12) = arrSource(i, 28)
+            arrDest(i, 13) = arrSource(i, 10)
+            arrDest(i, 14) = arrSource(i, 21)
+            arrDest(i, 15) = arrSource(i, 15)
+            arrDest(i, 16) = arrSource(i, 22)
+            arrDest(i, 17) = arrSource(i, 23)
+            arrDest(i, 18) = arrSource(i, 27)
+            arrDest(i, 19) = arrSource(i, 28)
+            arrDest(i, 20) = arrSource(i, 29)
+            arrDest(i, 21) = arrSource(i, 30)
+            arrDest(i, 22) = arrSource(i, 32)
+            arrDest(i, 23) = arrSource(i, 33)
+            arrDest(i, 24) = arrSource(i, 19)
+            arrDest(i, 25) = arrSource(i, 20)
+            arrDest(i, 26) = arrSource(i, 126)
+            arrDest(i, 27) = arrSource(i, 127)
+            arrDest(i, 28) = arrSource(i, 37)
+            arrDest(i, 29) = arrSource(i, 38)
+            arrDest(i, 30) = arrSource(i, 39)
+            arrDest(i, 31) = arrSource(i, 43)
+            arrDest(i, 32) = arrSource(i, 44)
+            arrDest(i, 33) = arrSource(i, 41)
+            arrDest(i, 34) = arrSource(i, 42)
+            arrDest(i, 35) = arrSource(i, 48)
+            arrDest(i, 36) = arrSource(i, 45)
+            arrDest(i, 37) = arrSource(i, 46)
+            arrDest(i, 38) = arrSource(i, 47)
+            arrDest(i, 39) = arrSource(i, 64)
+            arrDest(i, 40) = arrSource(i, 65)
+            arrDest(i, 41) = arrSource(i, 66)
+            arrDest(i, 42) = arrSource(i, 67)
+            arrDest(i, 43) = arrSource(i, 68)
+            arrDest(i, 44) = arrSource(i, 69)
+            arrDest(i, 45) = arrSource(i, 70)
+            arrDest(i, 46) = arrSource(i, 71)
+            arrDest(i, 47) = arrSource(i, 72)
+            arrDest(i, 48) = arrSource(i, 73)
+            arrDest(i, 49) = arrSource(i, 74)
+            arrDest(i, 50) = arrSource(i, 75)
+            arrDest(i, 51) = arrSource(i, 76)
+            arrDest(i, 52) = arrSource(i, 31)
+            arrDest(i, 53) = arrSource(i, 78)
+            arrDest(i, 54) = arrSource(i, 79)
+            arrDest(i, 55) = arrSource(i, 89)
+            arrDest(i, 56) = arrSource(i, 91)
+            arrDest(i, 57) = arrSource(i, 92)
+            arrDest(i, 58) = arrSource(i, 93)
+            arrDest(i, 59) = arrSource(i, 99)
+            arrDest(i, 60) = arrSource(i, 100)
+            arrDest(i, 61) = arrSource(i, 101)
+            arrDest(i, 62) = arrSource(i, 106)
+            arrDest(i, 63) = arrSource(i, 107)
+            arrDest(i, 64) = arrSource(i, 104)
+            arrDest(i, 65) = arrSource(i, 105)
+            arrDest(i, 66) = arrSource(i, 111)
+            arrDest(i, 67) = arrSource(i, 108)
+            arrDest(i, 68) = arrSource(i, 109)
+            arrDest(i, 69) = arrSource(i, 110)
+            arrDest(i, 70) = arrSource(i, 37)
+            arrDest(i, 71) = arrSource(i, 28)
+
+            
+            
+            
+       End If
+       
+       
+    
+    
+    Next i
+    
+        
+    ' get rows where transaction date > transdate and verification status is no and assign to an array
+    'Stop
+    
+
+'add the dest array to the bottom of the FAFSA tab
+
+appendArrSheet arrDest, fafsaSheet, 1
+
+
+
+
+
+    ' Save and close FAFSA workbook
+    fafsaWorkbook.Save
+    fafsaWorkbook.Close
+
+    ' Re-enable UI
+    EnableUI
+    UpdateStatus "FAFSA tab export complete."
+    MsgBox "FAFSA tab export complete."
+End Sub
+
+Function fetchRowsAfterDate(fs As Worksheet) As Variant
+   
+   Stop
+    
+
+End Function
+
+Function getLastTransDate(ws As Worksheet) As Long
+
+Dim dateColNum As Long
+dateColNum = 15
+Dim lastRow As Long
+
+lastRow = ws.Cells(ws.Rows.Count, dateColNum).End(xlUp).Row
+
+'just to be safe
+If lastRow < 2 Then
+        ' Handle case where there are no dates in the column
+        getLastTransDate = 0
+        Exit Function
+End If
+ 
+Dim arrDates() As Variant
+Dim dateRange As Range
+Set dateRange = ws.Range(ws.Cells(2, dateColNum), ws.Cells(lastRow, dateColNum)) 'all cells in col O  to lastRow
+arrDates = dateRange.Value
+
+'my dates are numbers not true dates, so this is a kludge
+Dim transDate As Long
+transDate = 0 ' declare with some past date older than our data - update if more recents in list
+'iterate through dates
+Dim i As Long
+For i = 1 To UBound(arrDates, 1) 'data starts in row 2
+    
+    If IsNumeric(arrDates(i, 1)) Then
+    
+        If arrDates(i, 1) > transDate Then
+            transDate = arrDates(i, 1)
+        End If
+    
+    End If
+    
+    
+  
+        
+Next i
+
+getLastTransDate = transDate
+ 
+End Function
+
+Sub appendArrSheet(ByRef a() As Variant, s As Worksheet, destCol As Long)
+
+    ' Get the last row of the destination sheet
+    Dim lastRow As Long
+    Dim destRange As Range
+    Dim resizedRange As Range
+
+    lastRow = s.Cells(s.Rows.Count, 5).End(xlUp).Row
+    
+    ' Set the destination range starting at the next available row and specified column
+    Set destRange = s.Cells(lastRow + 1, destCol)
+
+    ' Resize the destination range to fit the array dimensions
+    Set resizedRange = destRange.Resize(UBound(a, 1), UBound(a, 2))
+
+    ' Assign the array to the resized range
+    resizedRange.Value = a
+
+    ' Apply color to the entire resized range
+    resizedRange.Interior.Color = 15773696 ' Apply color to the entire range
+
+    ' Debug: Verify the size and range of the destination
+    Debug.Print "UBound(a, 1): " & UBound(a, 1)
+    Debug.Print "UBound(a, 2): " & UBound(a, 2)
+    Debug.Print "resizedRange.Address: " & resizedRange.Address
+
+End Sub
+Sub appendToMaster()
+
+    Dim sourceSheet As Worksheet
+    Dim MasterSheet As Worksheet
+    Dim fullWorkingFileName As String
+    Dim wbFullWorkingFile As Workbook
+    Dim lastRow As Long
+    Dim lastCol As Long
+    
+    On Error GoTo ErrorHandler
+
+    ' Initialization
+    Set sourceSheet = ThisWorkbook.Sheets("Sheet1")
+    lastRow = sourceSheet.Cells(sourceSheet.Rows.Count, 1).End(xlUp).Row
+    lastCol = sourceSheet.Cells(3, sourceSheet.Columns.Count).End(xlToLeft).Column
+
+    Dim RangeSource As Range
+    Set RangeSource = sourceSheet.Range(sourceSheet.Cells(3, 1), sourceSheet.Cells(lastRow, lastCol))
+    Dim arrSource As Variant
+    arrSource = RangeSource.Value
+
+    Dim arrDest As Collection
+    Set arrDest = New Collection
+    
+    Dim colCount As Long
+    colCount = UBound(arrSource, 2)
+
+    UpdateStatus "Export in progress..."
+    frmAltApp.lblStatus.Visible = True
+    'frmAltApp.Show vbModeless   ' Consider using a modeless form so the code can continue running
+    
+    DisableUI
+  
+    ' Select FullWorkingCopy
+    fullWorkingFileName = GetFilePath("Select the Full Working File", "Excel Workbook", "*.xlsx")
+
+    If fullWorkingFileName = vbNullString Then
+        MsgBox "No Full Working Copy file selected. Exiting..."
+        EnableUI
+        Exit Sub
+    End If
+
+    ' Open the file for editing
+    Set wbFullWorkingFile = Workbooks.Open(fullWorkingFileName)
+    Set MasterSheet = wbFullWorkingFile.Sheets("Master Sheet ")
+
+    ' Get latest trans date for filtering on new records
+    Dim lastTransDate As Long
+    lastTransDate = getLastTransDate(MasterSheet)
+
+    Dim i As Long, k As Long
+    Dim tempRow() As Variant
+
+UpdateStatus "Debug: create arrDest collection begin"
+
+    For i = 1 To UBound(arrSource, 1)
+        If ((arrSource(i, 297) = "N") And (arrSource(i, 13) > lastTransDate)) Then
+            ' Collect new row in tempRow array
+            ReDim tempRow(1 To colCount)
+            For k = 1 To colCount
+                tempRow(k) = arrSource(i, k)
+            Next k
+            arrDest.Add tempRow ' Add to collection
+        End If
+        UpdateStatus "Processing row " & i
+        DoEvents
+    Next i
+UpdateStatus "Debug: create arrDest collection complete"
+
+    UpdateStatus "DEBUG: preparing convert collection to arrayToAppend "
+    ' Convert Collection back to 2D array for appending
+    Dim arrToAppend() As Variant
+    Call CollectionTo2DArray(arrDest, arrToAppend)
+    
+    UpdateStatus "DEBUG: arrToAppend complete"
+
+    ' Debug information
+    Debug.Print UBound(arrToAppend, 1)
+    Debug.Print UBound(arrToAppend, 2)
+    
+    Dim sortedArray() As Variant
+    UpdateStatus "sorting array - this may take awhile"
+    'sortedArray() = SortArray(arrToAppend, 12)
+    UpdateStatus "sorting array -  complete"
+    ' make a temp range and cut/paste cols
+    Dim tempSheet As Worksheet
+    Set tempSheet = ThisWorkbook.Sheets.Add
+    tempSheet.Range("A1").Resize(UBound(sortedArray, 1), UBound(sortedArray, 2)).Value = sortedArray
+    '
+                With tempSheet
+        
+         '  tempSheet.Activate
+            
+            
+                'isac id 34
+                tempSheet.Columns("AD").Cut
+                tempSheet.Columns("A").Insert Shift:=xlToRight
+                
+                'lname 27
+                tempSheet.Columns("AB").Cut
+                tempSheet.Columns("B").Insert Shift:=xlToRight
+                
+                 'lname 25
+                tempSheet.Columns("AA").Cut
+                tempSheet.Columns("C").Insert Shift:=xlToRight
+                
+                
+                'middle initial 26
+                tempSheet.Columns("aB").Cut
+                tempSheet.Columns("D").Insert Shift:=xlToRight
+            
+                'dob 29
+                tempSheet.Columns("AD").Cut
+                tempSheet.Columns("E").Insert Shift:=xlToRight
+                
+                'phone 32
+                tempSheet.Columns("AF").Cut
+                tempSheet.Columns("F").Insert Shift:=xlToRight
+                
+                  'street addy 34
+                tempSheet.Columns("AH").Cut
+                tempSheet.Columns("G").Insert Shift:=xlToRight
+                
+                Dim tempRange As Range
+                Dim lastTempCol As Long
+                Dim lastTempRow As Long
+                lastTempCol = tempSheet.Cells(1, tempSheet.Columns.Count).End(xlToLeft).Column
+                lastTempRow = tempSheet.Cells(tempSheet.Rows.Count, 1).End(xlUp).Row
+                     'lastRow = sourceSheet.Cells(sourceSheet.Rows.Count, 1).End(xlUp).Row
+                      ' lastCol = sourceSheet.Cells(3, sourceSheet.Columns.Count).End(xlToLeft).Column
+                Set tempRange = Range(tempSheet.Cells(1, 1), tempSheet.Cells(lastTempRow, lastTempCol))
+
+                Dim tmpArr() As Variant
+                tmpArr = tempRange.Value
+                
+                Application.DisplayAlerts = False
+                tempSheet.Delete
+                Application.DisplayAlerts = True
+                
+    End With
+
+    
+   ' this is  abust - way  too slow.  Try a temp sheet instead and use ws fns
+  '  Dim orderedArray() As Variant
+  '  orderedArray = reorderArray(sortedArray)
+    
+    ' Append the data.  Reorder sorted array first
+    
+    UpdateStatus "append temparr at col 5"
+    
+    appendArrSheet tmpArr, MasterSheet, 5 'Col 5 to accommodate the inserted columns for internal process + empleid
+    'use tmparray instead of sorted array to correct order from tempsheet
+    Application.Wait (Now + TimeValue("0:00:03")) ' Small delay to ensure save completion
+
+    wbFullWorkingFile.Save
+    Application.Wait (Now + TimeValue("0:00:01")) ' Small delay to ensure save completion
+    
+      
+    
+    wbFullWorkingFile.Close
+    
+    frmAltApp.lblStatus.Visible = False
+    EnableUI
+    DoEvents
+    MsgBox "Full Working File update complete"
+    Exit Sub
+    
+
+    
+ErrorHandler:
+    MsgBox "An error occurred: " & Err.Description
+    EnableUI
+    On Error Resume Next
+    If Not wbFullWorkingFile Is Nothing Then
+        wbFullWorkingFile.Close False ' Close without saving if an error occurred
+    End If
+    On Error GoTo 0
+
+End Sub
+
+Function reorderArray(ByRef SourceArray() As Variant) As Variant
+'pass sorted array return reordered array
+
+    Dim numRows As Long, numCols As Long
+    Dim reorderedArray() As Variant
+    Dim colMapping As Object
+    Dim i As Long
+    
+    numRows = UBound(SourceArray, 1)
+    numCols = UBound(SourceArray, 2)
+    
+    ReDim reorderedArray(1 To numRows, 1 To numCols)
+    ' ReDim colMapping(1 To numCols)
+    
+       ' Create a mapping of original columns to destination columns
+    Set colMapping = CreateObject("Scripting.Dictionary")
+    colMapping(30) = 1   ' ISAC ID Number -> 1st column
+    colMapping(27) = 2   ' Last Name -> 2nd column
+    colMapping(25) = 3   ' First Name -> 3rd column
+    colMapping(26) = 4   ' Middle Name -> 4th column
+    colMapping(29) = 5   ' Date of Birth -> 5th column
+    colMapping(32) = 6   ' Phone Number -> 6th column
+    colMapping(34) = 7   ' Street Address -> 7th column
+    'colMapping(1) = 8    ' Year Indicator -> 8th column
+    
+       ' Shift the remaining columns by 7 positions to the right
+    For i = 1 To numCols
+        If Not colMapping.Exists(i) Then
+            colMapping(i) = i + 7
+        End If
+    Next i
+    
+    Dim j As Long
+    For i = 1 To numCols
+        Dim destCol As Long
+        destCol = colMapping(i)
+        For j = 1 To numRows
+            reorderedArray(j, destCol) = SourceArray(j, i)
+                If i = 939 Then
+                    If j = 392 Then
+                        Stop
+                    End If
+                End If
+           Debug.Print "COL " & i & ": ROW" & j
+        Next j
+    'assert i = 940
+
+    Next i
+    
+    reorderArray = reorderedArray
+
+End Function
+
+Sub SortArray(ByRef arrUnsorted() As Variant, sortCol As Long)
+
+
+    Dim i As Long, j As Long
+    Dim temp As Variant
+    Dim rowCount As Long
+    Dim colCount As Long
+    Dim col As Long
+    Dim arrSorted() As Variant
+
+    ' Get the number of rows and columns
+    rowCount = UBound(arrUnsorted, 1) ' Upper bound for the first dimension (rows)
+    colCount = UBound(arrUnsorted, 2) ' Upper bound for the second dimension (columns)
+
+    ' Create a copy of the unsorted array to sort
+    'arrSorted = arrUnsorted
+
+    ' Bubble sort algorithm
+    For i = LBound(arrUnsorted, 1) To rowCount - 1
+        For j = LBound(arrUnsorted, 1) To rowCount - i - 1
+            ' Compare the elements in the specified column (sortCol)
+            If arrUnsorted(j, sortCol) > arrUnsorted(j + 1, sortCol) Then
+                ' Swap entire rows
+                For col = LBound(arrUnsorted, 2) To colCount
+                    temp = arrUnsorted(j, col)
+                    arrUnsorted(j, col) = arrUnsorted(j + 1, col)
+                    arrUnsorted(j + 1, col) = temp
+                Next col
+            End If
+        Next j
+    Next i
+
+    ' Return the sorted array
+    'SortArray = arrSorted
+
+End Sub
+
+
+Sub CollectionTo2DArray(col As Collection, ByRef arr() As Variant)
+    Dim i As Long, j As Long
+    Dim colCount As Long
+    If col.Count = 0 Then Exit Sub
+    colCount = UBound(col(1))
+    ReDim arr(1 To col.Count, 1 To colCount)
+    For i = 1 To col.Count
+        For j = 1 To colCount
+            arr(i, j) = col(i)(j)
+        Next j
+    Next i
+End Sub
+
+Sub ReorderColumns(wb As Workbook)
+
+
+'scrap this approach - cannot reorder columns after import - must do it before appending array to  master sheet
+    Dim ws As Worksheet
+    Set ws = wb.Sheets("Master Sheet ")
+
+
+    'isac id 34
+    ws.Columns("AH").Cut
+    ws.Columns("E").Insert Shift:=xlToRight
+    
+    'lname 27
+    ws.Columns("AF").Cut
+    ws.Columns("F").Insert Shift:=xlToRight
+    
+     'lname 25
+    ws.Columns("AE").Cut
+    ws.Columns("G").Insert Shift:=xlToRight
+    
+    
+    'middle initial 26
+    ws.Columns("ag").Cut
+    ws.Columns("h").Insert Shift:=xlToRight
+
+    'dob 29
+    ws.Columns("AH").Cut
+    ws.Columns("I").Insert Shift:=xlToRight
+    
+    'phone 32
+    ws.Columns("AJ").Cut
+    ws.Columns("J").Insert Shift:=xlToRight
+    
+      'street addy 34
+    ws.Columns("AL").Cut
+    ws.Columns("K").Insert Shift:=xlToRight
+
+End Sub
+
+
+Sub filterAndCopy(lastDate As String)
+  
+    
+    Dim rgData As Range
+    Dim rgCriteria As Range
+    Dim copyRange As Range
+    Dim copyToStartCol As Long
+    Dim copyToEndCol As Long
+    
+    Debug.Print ThisWorkbook.Name
+    ' Set the source data range
+    Dim lastDataCol As Long, lastDataRow As Long
+        lastDataCol = ThisWorkbook.Worksheets("sheet1").Range("A2").End(xlToRight).Column
+        lastDataRow = ThisWorkbook.Worksheets("sheet1").Range("A2").End(xlDown).Row
+    'Set rgData = ThisWorkbook.Worksheets("sheet1").Range("A2").CurrentRegion
+    Set rgData = ThisWorkbook.Worksheets("Sheet1").Range(Sheet1.Cells(2, 1), Sheet1.Cells(lastDataRow, lastDataCol))
+    
+        Debug.Print rgData.Address
+
+     copyToEndCol = rgData.Columns.Count
+    
+    With ThisWorkbook.Worksheets("filtered_date")
+        Set copyRange = .Range(.Cells(1, 1), .Cells(1, copyToEndCol))
+        Set rgCriteria = .Range(.Cells(1, 951), .Cells(2, 951))
+    End With
+
+    'Set rgCriteria = ThisWorkbook.Worksheets("filtered_date").Range("AJO1:AJO2")
+    ' Set rgCriteria = ThisWorkbook.Worksheets("filtered_date").Range("AJO1:AJO2")
+
+    ' Dim lastDate As String
+    'lastDate = ">=20240601"
+    ' lastDate = getLastTransDate(wbFullWorking)  ' use workbook MAX fn instead
+    
+    rgCriteria.Cells(2, 1).Value = ">" & lastDate  'set passed val in criteria range
+  
+    ' Check if headers are properly set and copy range is valid
+    If WorksheetFunction.CountBlank(rgData.Rows(1)) = 0 Then
+        ' Apply the AdvancedFilter
+       ' Dim formProgress As filterProgressForm
+       ' Set formProgress = New filterProgressForm
+       ' Dim progressLabel As Control
+       ' Set progressLabel = formProgress.Controls("lblStatus")
+        
+        'formProgress.Show vbModeless
+        'progressLabel.Caption = "applying filter and moving columns.  This may take some time...."
+        frmAltApp.lblStatus.Visible = True
+        frmAltApp.lblStatus.Caption = "applying filter and moving columns.  This may take some time...."
+                DoEvents
+                    rgData.AdvancedFilter xlFilterCopy, rgCriteria, copyRange  'THIS IS THE MEAT OF IT
+                    'progressLabel.Caption = "Done..."
+                    frmAltApp.lblStatus.Visible = False
+                DoEvents
+         
+     
+        'formProgress.Hide
+        ' Unload formProgress
+    
+    Else
+        MsgBox "One or more headers are missing or invalid in the data range.", vbCritical
+    End If
+    
+
+End Sub
+
+Sub appendToMaster2()
+'refactor append function with the filter and copy  advancedc filter
+
+'file picker to full working  - get ultumate target range and also get max date
+   
+    Dim fullWorkingFileName As String
+    fullWorkingFileName = GetFilePath("Select the Full Working File", "Excel Workbook", "*.xls*")
+    
+    Dim wbFullWorkingFile As Workbook
+    Set wbFullWorkingFile = Workbooks.Open(fullWorkingFileName)
+    Dim MasterSheet As Worksheet
+    Set MasterSheet = wbFullWorkingFile.Sheets("Master Sheet ")
+    
+
+    
+    
+    'get date from Transaction Process-Date-13
+    Dim dateRange As Range
+    'use worksheet function instead of
+    Set dateRange = MasterSheet.Range("X2:X" & MasterSheet.Cells(MasterSheet.Rows.Count, "X").End(xlUp).Row)
+    Dim lastTransDate As String
+    lastTransDate = CStr(Application.WorksheetFunction.Max(dateRange))
+
+'advancecopy to filtered_date worksheet
+    'set criteria range with lastTransDate
+ '   filterAndCopy lastTransDate
+
+'set new records as arr and sort
+    Dim arrNewApps() As Variant
+    Dim newcols As Long, newrows As Long
+    newcols = ThisWorkbook.Worksheets("filtered_date").Range("a2").End(xlToRight).Column
+    newrows = ThisWorkbook.Worksheets("filtered_date").Range("a2").End(xlDown).Row - 1
+    
+    ReDim arrNewApps(1 To newrows, 1 To newcols)
+    arrNewApps = ThisWorkbook.Worksheets("filtered_date").Range(ThisWorkbook.Worksheets("filtered_date").Cells(2, 1), _
+    ThisWorkbook.Worksheets("filtered_date").Cells(newrows + 1, newcols)).Value
+    'arrNewApps = ThisWorkbook.Worksheets("filtered_date").Range(Columns(2, 1), Columns(newrows, newcols))
+    'arrNewApps = ThisWorkbook.Worksheets("filtered_date").Range("A1").Resize(newrows, newcols).Value
+
+    
+    SortArray arrNewApps, 15
+    
+    ' newcols =
+    
+
+'copy filtered range to full working apppend row on master sheet
+Dim appendRow As Long, appendCol As Long
+appendRow = MasterSheet.Range("E1").End(xlDown).Row + 1  ' Find the next empty row in column E
+appendCol = 5  ' Column 5 (Column E)
+
+Dim destRange As Range
+Set destRange = MasterSheet.Range(MasterSheet.Cells(appendRow, appendCol), _
+    MasterSheet.Cells(appendRow + UBound(arrNewApps, 1) - 1, appendCol + UBound(arrNewApps, 2) - 1))
+
+    
+destRange.Value = arrNewApps
+destRange.Interior.Color = 15773696
+
+
+wbFullWorkingFile.Save
+wbFullWorkingFile.Close
+    
+    
+End Sub
+
+
+Option Explicit
+
+'prompt for field lengths file
+
+
+Function selectNumbers() As String
+
+    Dim fileDialog As fileDialog
+    Dim fieldLengthsFilePath As String
+
+
+    Set fileDialog = Application.fileDialog(msoFileDialogFilePicker)
+    fileDialog.title = "Select Numbers file"
+    fileDialog.Filters.Clear
+    fileDialog.Filters.Add "CSV files", "*.csv", 1
+    If fileDialog.Show = -1 Then
+        
+        fieldLengthsFilePath = fileDialog.SelectedItems(1)
+        
+    
+    Else
+    
+        MsgBox "no file selected  - Exiting..."
+    
+    
+    End If
+    
+    selectNumbers = fieldLengthsFilePath
+   ' frmAltApp.txtSelectedNums.Text = selectNumbers
+
+End Function
+
+
+Sub parseFile()
+
+    Dim fileDialog As fileDialog
+    Dim fieldLengthsFilePath As String
+    Dim dataFilePath As String
+
+    Dim fieldLengths As Variant
+    Dim data As String
+    Dim line As String
+    Dim startPos As Integer
+    Dim i As Integer
+    Dim j As Integer
+    Dim ws As Worksheet
+    Dim currentRow As Long
+    Dim myrow As Long
+    
+       ' Show the form modelessly to allow updates
+    frmAltApp.lblStatus.Visible = True
+    frmAltApp.Show vbModeless
+    
+    frmAltApp.lblStatus.Caption = "Initializing..."
+    DoEvents ' Allow the UserForm to update
+
+    ' Disable Excel UI to simulate modal behavior
+    Application.Interactive = False
+    Application.ScreenUpdating = False
+
+'frmAltApp.txtSelectedNums.Text = selectNumbers
+      Set fileDialog = Application.fileDialog(msoFileDialogFilePicker)
+      
+
+    fileDialog.title = "Select the Data File"
+    fileDialog.Filters.Clear
+    fileDialog.Filters.Add "Text Files", "*.txt", 1
+    If fileDialog.Show = -1 Then
+        dataFilePath = fileDialog.SelectedItems(1)
+    Else
+        MsgBox "No file selected. Exiting..."
+        Exit Sub
+    End If
+    
+    ' Read the field lengths from the CSV file
+    fieldLengthsFilePath = frmAltApp.txtSelectedNums.Value
+    fieldLengths = ReadFieldLengths(fieldLengthsFilePath)
+    
+    
+    If IsEmpty(fieldLengths) Then
+        MsgBox "Failed to read field lengths. Exiting..."
+        Exit Sub
+    End If
+    
+    ' Read and process the data file
+    Dim filenum As Long
+    filenum = FreeFile
+    Open dataFilePath For Input As #filenum
+    
+    Dim fileconent As String
+    fileconent = Input$(LOF(filenum), filenum)
+    
+    Set ws = ThisWorkbook.Sheets(1) ' Change to your desired sheet
+    currentRow = 3
+
+    
+         
+         Dim lines() As String
+         lines = Split(fileconent, vbLf)
+         
+    For myrow = 0 To UBound(lines) - 1
+            Dim counter As Long
+            counter = counter + 1
+           
+            startPos = 1
+            j = 1
+            Dim thisLength As Long
+            For i = LBound(fieldLengths) To UBound(fieldLengths) - 1
+                thisLength = Abs(startPos - fieldLengths(i + 1)) + 1
+                'ws.Cells(currentRow, j).Value = Mid(line, startPos, thisLength)
+                
+                ws.Cells(currentRow, j).Value = Mid(lines(myrow), startPos, thisLength)
+                startPos = startPos + thisLength
+                j = j + 1
+    
+            Next i
+            currentRow = currentRow + 1
+      '  Debug.Print line
+        Debug.Print counter
+       ' Loop
+       
+        ' Update UserForm status
+        frmAltApp.lblStatus.Caption = "Processing row " & counter & " of " & UBound(lines)
+        DoEvents ' Allow the UserForm to update
+   Next myrow
+        
+    ' Re-enable Excel UI
+    Application.Interactive = True
+    Application.ScreenUpdating = True
+
+    ' Update and hide UserForm
+    frmAltApp.lblStatus.Caption = "Data import complete."
+    DoEvents
+         
+    frmAltApp.lblStatus.Visible = False
+ MsgBox "Data import complete."
+
+End Sub
+
+
+Function ReadFieldLengths(filePath As String) As Variant
+    Dim fieldLengths() As Integer
+    Dim line As String
+    Dim lengths() As String
+    Dim i As Integer
+    Dim fn As Integer
+    fn = FreeFile
+    Open filePath For Input As fn
+    If Not EOF(fn) Then
+    'Dim fileNum As Integer
+    'fileNum = FreeFile
+    
+        Line Input #fn, line
+        lengths = Split(line, ",")
+        ReDim fieldLengths(LBound(lengths) To UBound(lengths))
+        For i = LBound(lengths) To UBound(lengths)
+            fieldLengths(i) = CInt(lengths(i))
+        Next i
+    End If
+    Close fn
+    
+    ReadFieldLengths = fieldLengths
+End Function
+
+
+Sub CopySheetToDestination()
+    Dim destWorkbook As Workbook
+    Dim destFileName As String
+    Dim sourceSheet As Worksheet
+
+    ' Prompt the user to select the destination workbook
+    destFileName = Application.GetOpenFilename("Excel Files (*.xlsx; *.xlsm), *.xlsx; *.xlsm", , "Select Destination Workbook")
+    
+    ' Check if the user canceled the file dialog
+    If destFileName = "False" Then
+        MsgBox "Operation canceled."
+        Exit Sub
+    End If
+   
+    
+    
+    
+    
+    ' Set the source sheet
+    Set sourceSheet = ThisWorkbook.Sheets("Sheet1")
+    
+    ' Open the destination workbook
+    Set destWorkbook = Workbooks.Open(destFileName)
+    
+    
+    ' Copy the sheet to the destination workbook
+    sourceSheet.Copy After:=destWorkbook.Sheets(1)
+     
+    'remove row one with button
+   
+    
+    ' Save and close the destination workbook
+    destWorkbook.Save
+    destWorkbook.Close
+    
     ' Reactivate the original workbook
     ThisWorkbook.Activate
     
